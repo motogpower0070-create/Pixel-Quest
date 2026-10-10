@@ -1,68 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Pixel-Quest</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pixel-Quest Mobile</title>
   <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
     body {
       margin: 0;
-      background: #181827;
-      color: white;
-      font-family: Arial, sans-serif;
+      padding: 0;
+      background: #0d0f18;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      margin-top: 8px;
       text-align: center;
     }
-    h1 { color: #33d8ff; }
-    canvas {
-      background: linear-gradient(#172e52, #51943d);
-      width: min(500px, 90vw);
-      height: main;
-      border: 3px solid #33d8ff;
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: #00e5ff;
+      text-shadow: 0 0 10px rgba(0,229,255,0.5);
     }
-    p { color: #d8ff6f; }
+    #status {
+      margin: 4px 0 8px 0;
+      font-size: 0.9rem;
+      color: #ffeb3b;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      width: 95vw;
+      max-width: 450px;
+      height: 60vh;
+      max-height: 550px;
+      border: 3px solid #00e5ff;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+      background: #111;
+    }
+    /* Mobile Controls Bar */
+    #controls {
+      width: 100%;
+      max-width: 450px;
+      padding: 10px 15px 20px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .d-pad {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      background: linear-gradient(145deg, #1f283d, #151a28);
+      border: 2px solid #00e5ff;
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 65px;
+      height: 65px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 10px rgba(0,0,0,0.4);
+      active {
+        transform: scale(0.92);
+        background: #00e5ff;
+        color: #000;
+      }
+    }
+    .btn-jump {
+      width: 80px;
+      height: 65px;
+      border-radius: 30px;
+      background: linear-gradient(145deg, #ff4081, #c2185b);
+      border-color: #ff80ab;
+      font-size: 1.1rem;
+    }
   </style>
 </head>
 <body>
-  <h1>Pixel-Quest</h1>
-  <p>Use &larr; &rarr; or arrows to move | &uarr; or Space to Jump</p>
-  <canvas id="game" width="500" height="500"></canvas>
-  <p id="status">Collect all coins and reach the golden flag!</p>
+
+  <header>
+    <h1>✨ Pixel-Quest Mobile</h1>
+    <p id="status">Collect all 5 gems to unlock the flag!</p>
+  </header>
+
+  <div id="game-container">
+    <canvas id="game" width="400" height="500"></canvas>
+  </div>
+
+  <div id="controls">
+    <div class="d-pad">
+      <button class="btn" id="btn-left">◀</button>
+      <button class="btn" id="btn-right">▶</button>
+    </div>
+    <button class="btn btn-jump" id="btn-jump">JUMP</button>
+  </div>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-    const status = document.getElementById("status");
+    const statusText = document.getElementById("status");
 
-    const keys = {};
-    document.addEventListener("keydown", e => {
-      keys[e.key.toLowerCase()] = true;
-      if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) {
-        e.preventDefault();
-      }
+    // Touch control state
+    const input = { left: false, right: false, jump: false };
+
+    function bindTouch(id, key) {
+      const btn = document.getElementById(id);
+      const start = (e) => { e.preventDefault(); input[key] = true; };
+      const end = (e) => { e.preventDefault(); input[key] = false; };
+      btn.addEventListener("touchstart", start);
+      btn.addEventListener("touchend", end);
+      btn.addEventListener("mousedown", start);
+      btn.addEventListener("mouseup", end);
+    }
+    bindTouch("btn-left", "left");
+    bindTouch("btn-right", "right");
+    bindTouch("btn-jump", "jump");
+
+    // Keyboard support fallback
+    window.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft" || e.key === "a") input.left = true;
+      if (e.key === "ArrowRight" || e.key === "d") input.right = true;
+      if (e.key === "ArrowUp" || e.key === " " || e.key === "w") input.jump = true;
       if (e.key.toLowerCase() === "r") reset();
     });
-    document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+    window.addEventListener("keyup", e => {
+      if (e.key === "ArrowLeft" || e.key === "a") input.left = false;
+      if (e.key === "ArrowRight" || e.key === "d") input.right = false;
+      if (e.key === "ArrowUp" || e.key === " " || e.key === "w") input.jump = false;
+    });
 
+    // Platforms with modern styling
     const platforms = [
-      {x: 0, y: 450, w: 500, h: 40},
-      {x: 140, y: 360, w: 130, h: 18},
-      {x: 350, y: 310, w: 130, h: 18},
-      {x: 260, y: 240, w: 120, h: 18},
-      {x: 75, y: 170, w: 120, h: 18}
+      { x: 0, y: 460, w: 400, h: 40, color: "#2d3748" },
+      { x: 30, y: 380, w: 120, h: 16, color: "#4a5568" },
+      { x: 230, y: 340, w: 130, h: 16, color: "#4a5568" },
+      { x: 80, y: 260, w: 120, h: 16, color: "#4a5568" },
+      { x: 240, y: 200, w: 110, h: 16, color: "#4a5568" },
+      { x: 50, y: 130, w: 130, h: 16, color: "#4a5568" }
     ];
 
-    let player, coins, score, won;
+    let player, coins, score, won, frame = 0;
 
     function reset() {
-      player = {x: 40, y: 400, w: 25, h: 34, vx: 0, vy: 0, ground: false};
+      player = { x: 30, y: 400, w: 24, h: 32, vx: 0, vy: 0, ground: false, facing: 'right' };
       coins = [
-        {x: 210, y: 345, got: false},
-        {x: 420, y: 275, got: false},
-        {x: 300, y: 205, got: false},
-        {x: 130, y: 135, got: false}
+        { x: 80, y: 350, got: false },
+        { x: 290, y: 310, got: false },
+        { x: 130, y: 230, got: false },
+        { x: 280, y: 170, got: false },
+        { x: 90, y: 100, got: false }
       ];
       score = 0;
       won = false;
-      status.textContent = "Collect all coins and reach the golden flag!";
+      statusText.textContent = "Collect all 5 gems to unlock the flag!";
     }
     reset();
 
@@ -73,24 +187,24 @@
 
     function update() {
       if (won) return;
+      frame++;
 
       // Horizontal movement
-      if (keys["arrowleft"] || keys["a"]) player.vx = -3;
-      else if (keys["arrowright"] || keys["d"]) player.vx = 3;
+      if (input.left) { player.vx = -3.5; player.facing = 'left'; }
+      else if (input.right) { player.vx = 3.5; player.facing = 'right'; }
       else player.vx = 0;
 
       player.x += player.vx;
 
-      // Canvas boundaries (X)
+      // Canvas boundary limits
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
 
-      // Gravity and Jumping
-      player.vy += 0.4;
+      // Gravity & Jumping
+      player.vy += 0.45;
       player.y += player.vy;
       player.ground = false;
 
-      // Platform collisions (Y axis)
       for (let p of platforms) {
         if (overlap(player, p)) {
           if (player.vy > 0 && player.y + player.h - player.vy <= p.y) {
@@ -101,65 +215,93 @@
         }
       }
 
-      if ((keys["arrowup"] || keys["w"] || keys[" "]) && player.ground) {
-        player.vy = -9;
+      if (input.jump && player.ground) {
+        player.vy = -9.5;
         player.ground = false;
       }
 
-      // Coin collection
+      // Collect Gems
       for (let c of coins) {
-        if (!c.got && overlap(player, {x: c.x, y: c.y, w: 15, h: 15})) {
+        if (!c.got && overlap(player, { x: c.x, y: c.y, w: 16, h: 16 })) {
           c.got = true;
           score++;
+          statusText.textContent = `Gems Collected: ${score}/${coins.length}`;
         }
       }
 
-      // Win condition (reaching top area/flag with all coins)
-      if (score === coins.length && player.y < 120 && player.x < 150) {
+      // Check Win Condition at Top Platform
+      if (score === coins.length && player.y < 130 && player.x < 150) {
         won = true;
-        status.textContent = "You Win! Press 'R' to restart.";
+        statusText.textContent = "🎉 YOU WIN! Tap JUMP to play again.";
       }
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Atmospheric Gradient Background
+      let bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGradient.addColorStop(0, "#0b1021");
+      bgGradient.addColorStop(1, "#2b1055");
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw platforms
-      ctx.fillStyle = "#2e5d32";
+      // Glowing Moon
+      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = "#fff";
+      ctx.beginPath();
+      ctx.arc(330, 70, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Draw Platforms with highlights
       for (let p of platforms) {
+        ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = "#4caf50";
-        ctx.strokeRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = "#00e5ff";
+        ctx.fillRect(p.x, p.y, p.w, 3); // Neon top border
       }
 
-      // Draw coins
-      ctx.fillStyle = "#ffd700";
+      // Draw Gems with Shimmer
       for (let c of coins) {
         if (!c.got) {
+          let floatY = c.y + Math.sin(frame * 0.1) * 3;
+          ctx.fillStyle = "#ffd700";
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = "#ffd700";
           ctx.beginPath();
-          ctx.arc(c.x + 7.5, c.y + 7.5, 7, 0, Math.PI * 2);
+          ctx.arc(c.x + 8, floatY + 8, 7, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
         }
       }
 
-      // Draw goal flag at the top left
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(50, 100, 4, 70);
-      ctx.fillStyle = "#ff4757";
+      // Draw Flag / Goal
+      ctx.fillStyle = score === coins.length ? "#00ff88" : "#555";
+      ctx.fillRect(60, 70, 4, 60);
+      ctx.fillStyle = score === coins.length ? "#ff0055" : "#888";
       ctx.beginPath();
-      ctx.moveTo(54, 100);
-      ctx.lineTo(84, 115);
-      ctx.lineTo(54, 130);
+      ctx.moveTo(64, 70);
+      ctx.lineTo(94, 85);
+      ctx.lineTo(64, 100);
       ctx.fill();
 
-      // Draw player
-      ctx.fillStyle = "#ff5252";
+      // Draw Player Character
+      ctx.fillStyle = "#00e5ff";
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = "#00e5ff";
       ctx.fillRect(player.x, player.y, player.w, player.h);
+      ctx.shadowBlur = 0;
+
+      // Player eyes (facing direction indicator)
+      ctx.fillStyle = "#000";
+      let eyeOffset = player.facing === 'right' ? 14 : 4;
+      ctx.fillRect(player.x + eyeOffset, player.y + 6, 4, 6);
     }
 
     function loop() {
       update();
       draw();
+      if (won && input.jump) reset();
       requestAnimationFrame(loop);
     }
 
